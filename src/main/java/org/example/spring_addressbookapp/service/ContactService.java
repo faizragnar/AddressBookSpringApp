@@ -63,10 +63,12 @@ public class ContactService implements IContactService {
     }
 
     private ContactDTO convertToDTO(Contact contact) {
-        return new ContactDTO(contact.getName(), contact.getPhone(), contact.getEmail(), contact.getAddress());
+        return new ContactDTO(contact.getId(), contact.getName(), contact.getPhone(), contact.getEmail(), contact.getAddress());
     }
 
+    // ✅ Fixed: Updated to include correct constructor
     private Contact convertToEntity(ContactDTO contactDTO) {
-        return new Contact(contactDTO.getName(), contactDTO.getPhone(), contactDTO.getEmail(), contactDTO.getAddress());
+        return new Contact(contactDTO.getId(), contactDTO.getName(), contactDTO.getPhone(), contactDTO.getEmail(), contactDTO.getAddress());
     }
 }
+
