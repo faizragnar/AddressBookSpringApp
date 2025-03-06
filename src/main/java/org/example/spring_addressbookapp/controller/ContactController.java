@@ -1,60 +1,61 @@
 package org.example.spring_addressbookapp.controller;
 
+import org.example.spring_addressbookapp.repository.ContactRepository;
 import org.example.spring_addressbookapp.model.Contact;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @RestController
 @RequestMapping("/contacts")
 public class ContactController {
 
-    private final List<Contact> contactList = new ArrayList<>();
-    private final AtomicInteger idCounter = new AtomicInteger(1);
+    @Autowired
+    ContactRepository contactRepository;
 
+    // GET all contacts
     @GetMapping("/all")
-    public List<Contact> getAllContacts() {
-        return new ArrayList<>(contactList);
+    public ResponseEntity<List<Contact>> getAllContacts() {
+        return ResponseEntity.ok(contactRepository.findAll());
     }
 
+    // GET contact by ID
     @GetMapping("/get/{id}")
-    public Contact getContactById(@PathVariable int id) {
-        return contactList.stream()
-                .filter(contact -> contact.getId() == id)
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Contact not found!"));
+    public ResponseEntity<Contact> getContactById(@PathVariable int id) {
+        Optional<Contact> contact = contactRepository.findById(id);
+        return contact.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    // POST - Add new contact
     @PostMapping("/add")
-    public Contact addContact(@RequestBody Contact contact) {
-        contact.setId(idCounter.getAndIncrement()); // Assign unique ID
-        contactList.add(contact);
-        return contact;
+    public ResponseEntity<Contact> addContact(@RequestBody Contact contact) {
+        Contact savedContact = contactRepository.save(contact);
+        return ResponseEntity.ok(savedContact);
     }
 
+    // PUT - Update existing contact by ID
     @PutMapping("/update/{id}")
-    public Contact updateContact(@PathVariable int id, @RequestBody Contact updatedContact) {
-        Optional<Contact> existingContactOpt = contactList.stream()
-                .filter(contact -> contact.getId() == id)
-                .findFirst();
-
-        if (existingContactOpt.isPresent()) {
-            Contact existingContact = existingContactOpt.get();
+    public ResponseEntity<Contact> updateContact(@PathVariable int id, @RequestBody Contact updatedContact) {
+        return contactRepository.findById(id).map(existingContact -> {
             existingContact.setName(updatedContact.getName());
             existingContact.setPhone(updatedContact.getPhone());
             existingContact.setEmail(updatedContact.getEmail());
             existingContact.setAddress(updatedContact.getAddress());
-            return existingContact;
-        } else {
-            throw new RuntimeException("Contact not found!");
-        }
+            contactRepository.save(existingContact);
+            return ResponseEntity.ok(existingContact);
+        }).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    // DELETE - Remove contact by ID
     @DeleteMapping("/delete/{id}")
-    public void deleteContact(@PathVariable int id) {
-        contactList.removeIf(contact -> contact.getId() == id);
+    public ResponseEntity<String> deleteContact(@PathVariable int id) {
+        if (contactRepository.existsById(id)) {
+            contactRepository.deleteById(id);
+            return ResponseEntity.ok("Contact deleted successfully.");
+        }
+        return ResponseEntity.notFound().build();
     }
 }
