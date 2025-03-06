@@ -10,7 +10,7 @@ import org.example.spring_addressbookapp.service.ContactService;
 @RequestMapping("/contacts")
 public class ContactController {
 
-    private final ContactService contactService;
+    ContactService contactService;
 
     @Autowired
     public ContactController(ContactService contactService) {

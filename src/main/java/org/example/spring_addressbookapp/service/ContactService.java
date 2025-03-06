@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 @Service
 public class ContactService implements IContactService {
 
-    private final ContactRepository contactRepository;
+    ContactRepository contactRepository;
 
     @Autowired
     public ContactService(ContactRepository contactRepository) {
