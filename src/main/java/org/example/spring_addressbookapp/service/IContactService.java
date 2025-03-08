@@ -31,19 +31,25 @@ public class IContactService implements ContactService {
 
     @Override
     public ContactDTO addContact(ContactDTO contactDTO) {
-        log.info("Adding new contact: {}", contactDTO.getName());
-        Contact contact = convertToEntity(contactDTO);
-        Contact savedContact = contactRepository.save(contact);
-        log.info("Contact added with ID: {}", savedContact.getId());
-        return convertToDTO(savedContact);
+        try {
+            log.info("Adding new contact: {}", contactDTO.getName());
+            Contact contact = convertToEntity(contactDTO);
+            Contact savedContact = contactRepository.save(contact);
+            log.info("Contact added with ID: {}", savedContact.getId());
+            return convertToDTO(savedContact);
+        } catch (Exception e) {
+            log.error("Error adding contact: {}", e.getMessage());
+            throw new RuntimeException("Failed to add contact.");
+        }
     }
 
     @Override
     public ContactDTO updateContact(int id, ContactDTO updatedContactDTO) {
-        log.info("Updating contact with ID: {}", id);
-        Contact existingContact = contactRepository.findById(id).orElse(null);
+        try {
+            log.info("Updating contact with ID: {}", id);
+            Contact existingContact = contactRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Contact not found with ID: " + id));
 
-        if (existingContact != null) {
             existingContact.setName(updatedContactDTO.getName());
             existingContact.setPhone(updatedContactDTO.getPhone());
             existingContact.setEmail(updatedContactDTO.getEmail());
@@ -52,8 +58,10 @@ public class IContactService implements ContactService {
             Contact updatedContact = contactRepository.save(existingContact);
             log.info("Updated contact with ID: {}", updatedContact.getId());
             return convertToDTO(updatedContact);
+        } catch (Exception e) {
+            log.error("Error updating contact: {}", e.getMessage());
+            throw new RuntimeException("Failed to update contact.");
         }
-        return null;
     }
 
     @Override
