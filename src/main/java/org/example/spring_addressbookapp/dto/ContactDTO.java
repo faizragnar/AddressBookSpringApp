@@ -1,10 +1,11 @@
 package org.example.spring_addressbookapp.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+
 
 @Getter
 @Setter
+@AllArgsConstructor
 public class ContactDTO {
     private int id;
     private String name;
@@ -12,11 +13,5 @@ public class ContactDTO {
     private String email;
     private String address;
 
-    public ContactDTO(int id ,String name, String phone, String email, String address) {
-        this.id = id;
-        this.name = name;
-        this.phone = phone;
-        this.email = email;
-        this.address = address;
-    }
+
 }
