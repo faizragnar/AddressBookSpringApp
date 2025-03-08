@@ -1,5 +1,6 @@
 package org.example.spring_addressbookapp.controller;
 
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -28,12 +29,12 @@ public class ContactController {
     }
 
     @PostMapping("/add")
-    public ContactDTO addContact(@RequestBody ContactDTO contactDTO) {
+    public ContactDTO addContact(@RequestBody @Valid ContactDTO contactDTO) {
         return contactService.addContact(contactDTO);
     }
 
     @PutMapping("/update/{id}")
-    public ContactDTO updateContact(@PathVariable int id, @RequestBody ContactDTO updatedContact) {
+    public ContactDTO updateContact(@PathVariable int id,@Valid @RequestBody ContactDTO updatedContact) {
         return contactService.updateContact(id, updatedContact);
     }
 
