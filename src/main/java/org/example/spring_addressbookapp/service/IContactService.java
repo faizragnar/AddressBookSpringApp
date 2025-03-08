@@ -20,18 +20,13 @@ public class IContactService implements ContactService {
     @Override
     public List<ContactDTO> getAllContacts() {
         log.info("Fetching all contacts...");
-        return contactRepository.findAll()
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        return contactRepository.findAll().stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
     @Override
     public ContactDTO getContactById(int id) {
         log.info("Fetching contact with ID: {}", id);
-        return contactRepository.findById(id)
-                .map(this::convertToDTO)
-                .orElse(null);
+        return contactRepository.findById(id).map(this::convertToDTO).orElse(null);
     }
 
     @Override
