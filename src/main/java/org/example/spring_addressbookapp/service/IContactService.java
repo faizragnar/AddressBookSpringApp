@@ -2,6 +2,7 @@ package org.example.spring_addressbookapp.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.spring_addressbookapp.dto.ContactDTO;
+import org.example.spring_addressbookapp.exception.ContactNotFoundException;
 import org.example.spring_addressbookapp.model.Contact;
 import org.example.spring_addressbookapp.repository.ContactRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,14 +20,26 @@ public class IContactService implements ContactService {
 
     @Override
     public List<ContactDTO> getAllContacts() {
-        log.info("Fetching all contacts...");
-        return contactRepository.findAll().stream().map(this::convertToDTO).collect(Collectors.toList());
+        try {
+            log.info("Fetching all contacts...");
+            return contactRepository.findAll().stream().map(this::convertToDTO).collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("Error fetching contacts: {}", e.getMessage());
+            throw new RuntimeException("Failed to retrieve contacts.");
+        }
     }
 
     @Override
     public ContactDTO getContactById(int id) {
-        log.info("Fetching contact with ID: {}", id);
-        return contactRepository.findById(id).map(this::convertToDTO).orElse(null);
+        try {
+            log.info("Fetching contact with ID: {}", id);
+            return contactRepository.findById(id)
+                    .map(this::convertToDTO)
+                    .orElseThrow(() -> new ContactNotFoundException("Contact not found with ID: " + id));
+        } catch (Exception e) {
+            log.error("Error retrieving contact: {}", e.getMessage());
+            throw new RuntimeException("Contact not found with ID: " + id);
+        }
     }
 
     @Override
@@ -48,7 +61,7 @@ public class IContactService implements ContactService {
         try {
             log.info("Updating contact with ID: {}", id);
             Contact existingContact = contactRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Contact not found with ID: " + id));
+                    .orElseThrow(() -> new ContactNotFoundException("Contact not found with ID: " + id));
 
             existingContact.setName(updatedContactDTO.getName());
             existingContact.setPhone(updatedContactDTO.getPhone());
@@ -60,15 +73,23 @@ public class IContactService implements ContactService {
             return convertToDTO(updatedContact);
         } catch (Exception e) {
             log.error("Error updating contact: {}", e.getMessage());
-            throw new RuntimeException("Failed to update contact.");
+            throw new RuntimeException("Contact not found with ID: " + id);
         }
     }
 
     @Override
     public void deleteContact(int id) {
-        log.warn("Deleting contact with ID: {}", id);
-        contactRepository.deleteById(id);
-        log.info("Deleted contact with ID: {}", id);
+        try {
+            log.warn("Deleting contact with ID: {}", id);
+            Contact contact = contactRepository.findById(id)
+                    .orElseThrow(() -> new ContactNotFoundException("Contact not found with ID: " + id));
+
+            contactRepository.deleteById(id);
+            log.info("Deleted contact with ID: {}", id);
+        } catch (Exception e) {
+            log.error("Error deleting contact: {}", e.getMessage());
+            throw new RuntimeException("Contact not found with ID: " + id);
+        }
     }
 
     private ContactDTO convertToDTO(Contact contact) {
