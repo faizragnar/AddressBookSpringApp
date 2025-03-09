@@ -31,34 +31,28 @@ public class IContactService implements ContactService {
 
     @Override
     public ContactDTO getContactById(int id) {
-        try {
+
             log.info("Fetching contact with ID: {}", id);
             return contactRepository.findById(id)
                     .map(this::convertToDTO)
                     .orElseThrow(() -> new ContactNotFoundException("Contact not found with ID: " + id));
-        } catch (Exception e) {
-            log.error("Error retrieving contact: {}", e.getMessage());
-            throw new RuntimeException("Contact not found with ID: " + id);
-        }
+
     }
 
     @Override
     public ContactDTO addContact(ContactDTO contactDTO) {
-        try {
+
             log.info("Adding new contact: {}", contactDTO.getName());
             Contact contact = convertToEntity(contactDTO);
             Contact savedContact = contactRepository.save(contact);
             log.info("Contact added with ID: {}", savedContact.getId());
             return convertToDTO(savedContact);
-        } catch (Exception e) {
-            log.error("Error adding contact: {}", e.getMessage());
-            throw new RuntimeException("Failed to add contact.");
-        }
+
     }
 
     @Override
     public ContactDTO updateContact(int id, ContactDTO updatedContactDTO) {
-        try {
+
             log.info("Updating contact with ID: {}", id);
             Contact existingContact = contactRepository.findById(id)
                     .orElseThrow(() -> new ContactNotFoundException("Contact not found with ID: " + id));
@@ -71,25 +65,19 @@ public class IContactService implements ContactService {
             Contact updatedContact = contactRepository.save(existingContact);
             log.info("Updated contact with ID: {}", updatedContact.getId());
             return convertToDTO(updatedContact);
-        } catch (Exception e) {
-            log.error("Error updating contact: {}", e.getMessage());
-            throw new RuntimeException("Contact not found with ID: " + id);
-        }
+
     }
 
     @Override
     public void deleteContact(int id) {
-        try {
+
             log.warn("Deleting contact with ID: {}", id);
             Contact contact = contactRepository.findById(id)
                     .orElseThrow(() -> new ContactNotFoundException("Contact not found with ID: " + id));
 
             contactRepository.deleteById(id);
             log.info("Deleted contact with ID: {}", id);
-        } catch (Exception e) {
-            log.error("Error deleting contact: {}", e.getMessage());
-            throw new RuntimeException("Contact not found with ID: " + id);
-        }
+
     }
 
     private ContactDTO convertToDTO(Contact contact) {
