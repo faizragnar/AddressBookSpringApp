@@ -5,10 +5,17 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.example.spring_addressbookapp.dto.AuthUserDTO;
 import org.example.spring_addressbookapp.dto.LoginDTO;
+import org.example.spring_addressbookapp.service.JwtUserDetailsService;
+import org.example.spring_addressbookapp.utility.JwtUtility;
 import org.example.spring_addressbookapp.service.AuthenticationServiceInterface;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+
 import org.springframework.web.bind.annotation.*;
+
 
 import java.util.Map;
 
@@ -18,19 +25,37 @@ import java.util.Map;
 public class AuthController {
 
     @Autowired
-    AuthenticationServiceInterface authenticationServiceInterface;
+    private JwtUtility jwtUtility;
 
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private JwtUserDetailsService userDetailsService;
+
+    @Autowired
+    private AuthenticationServiceInterface authenticationServiceInterface;
+
+    @Value("${app.master.key}")
+    private String masterKey;
+
+    // 🔹 Register a New User
     @PostMapping("/register")
-    @Operation(summary = "Register a new user", description = "Registers a user and sends a welcome email")
-    public String registerUser(@Valid @RequestBody AuthUserDTO authUserDTO) {
-        return authenticationServiceInterface.registerUser(authUserDTO);
+    public ResponseEntity<String> registerUser(
+            @Valid @RequestBody AuthUserDTO authUserDTO,
+            @RequestHeader(value = "masterkey", required = false) String receivedMasterKey
+    ) {
+        return ResponseEntity.ok(authenticationServiceInterface.registerUser(authUserDTO, receivedMasterKey));
     }
 
+    // 🔹 Login Functionality
     @PostMapping("/login")
-    @Operation(summary = "User Login", description = "Allows users to log in and receive a JWT token")
-    public Map<String, String> loginUser(@Valid @RequestBody LoginDTO loginDTO) {
+    @Operation(summary = "User Login", description = "Authenticates a user and returns a JWT token")
+    public ResponseEntity<?> login(@Valid @RequestBody LoginDTO loginDTO) {
         return authenticationServiceInterface.loginUser(loginDTO);
     }
+
+    // 🔹 Forgot Password
     @PutMapping("/forgot/{email}")
     @Operation(summary = "Forgot Password", description = "Allows users to reset their password if forgotten")
     public Map<String, String> forgotPassword(@PathVariable String email, @RequestBody Map<String, String> requestBody) {
@@ -38,10 +63,11 @@ public class AuthController {
         return Map.of("message", responseMessage);
     }
 
+    // 🔹 Reset Password
     @PutMapping("/resetPassword/{email}")
-    @Operation(summary = "Reset Password")
+    @Operation(summary = "Reset Password", description = "Enables users to securely update their password")
     public ResponseEntity<Map<String, String>> resetPassword(
-            @PathVariable String email,@RequestBody Map<String, String> passwordRequest) {
+            @PathVariable String email, @RequestBody Map<String, String> passwordRequest) {
 
         String currentPassword = passwordRequest.get("currentPassword");
         String newPassword = passwordRequest.get("newPassword");
@@ -53,6 +79,4 @@ public class AuthController {
         String responseMessage = authenticationServiceInterface.resetPassword(email, currentPassword, newPassword);
         return ResponseEntity.ok(Map.of("message", responseMessage));
     }
-
-
 }

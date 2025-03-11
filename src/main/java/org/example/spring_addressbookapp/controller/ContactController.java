@@ -8,7 +8,7 @@ import org.example.spring_addressbookapp.dto.ContactDTO;
 import org.example.spring_addressbookapp.service.ContactService;
 
 @RestController
-@RequestMapping("/contacts")
+@RequestMapping("/api/contacts")
 public class ContactController {
 
     ContactService contactService;
@@ -18,7 +18,7 @@ public class ContactController {
         this.contactService = contactService;
     }
 
-    @GetMapping("/all")
+    @GetMapping("/admin/all")
     public List<ContactDTO> getAllContacts() {
         return contactService.getAllContacts();
     }

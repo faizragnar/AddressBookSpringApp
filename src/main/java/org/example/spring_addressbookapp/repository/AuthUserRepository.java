@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-@EnableJpaRepositories(basePackages = "org.example.greetingspring")
+@EnableJpaRepositories(basePackages = "org.example.spring_addressbookapp")
 
 public interface AuthUserRepository extends JpaRepository<AuthUser, Long> {
     Optional<AuthUser> findByEmail(String email);

@@ -4,8 +4,12 @@ import org.example.spring_addressbookapp.dto.AuthUserDTO;
 import org.example.spring_addressbookapp.dto.LoginDTO;
 import org.example.spring_addressbookapp.model.AuthUser;
 import org.example.spring_addressbookapp.repository.AuthUserRepository;
-import org.example.spring_addressbookapp.security.JwtUtil;
+import org.example.spring_addressbookapp.utility.JwtUtility;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -16,23 +20,27 @@ import java.util.Optional;
 @Service
 public class AuthenticationService implements AuthenticationServiceInterface {
 
-    private final AuthUserRepository authUserRepository;
-    private final EmailService emailService;
-    private final JwtUtil jwtUtil;
-    private final PasswordEncoder passwordEncoder;
+    @Autowired
+    AuthUserRepository authUserRepository;
 
     @Autowired
-    public AuthenticationService(AuthUserRepository authUserRepository,
-                                 EmailService emailService,
-                                 PasswordEncoder passwordEncoder,
-                                 JwtUtil jwtUtil) {
-        this.authUserRepository = authUserRepository;
-        this.emailService = emailService;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtUtil = jwtUtil;
-    }
+    EmailService emailService;
 
-    public String registerUser(AuthUserDTO authUserDTO) {
+    @Autowired
+    JwtUtility jwtUtility;
+
+    @Autowired
+    JwtUserDetailsService userDetailsService;
+
+    @Autowired
+    PasswordEncoder passwordEncoder;
+
+    @Value("${app.master.key}")
+    private String masterKey;
+
+
+    @Override
+    public String registerUser(AuthUserDTO authUserDTO, String receivedMasterKey) {
         if (authUserRepository.findByEmail(authUserDTO.getEmail()).isPresent()) {
             throw new RuntimeException("Email already registered!");
         }
@@ -43,33 +51,48 @@ public class AuthenticationService implements AuthenticationServiceInterface {
         newUser.setEmail(authUserDTO.getEmail());
         newUser.setPassword(passwordEncoder.encode(authUserDTO.getPassword()));
 
+        // 🔹 Secure Role Assignment
+        String role = authUserDTO.getRole().toUpperCase();
+        if ("ADMIN".equalsIgnoreCase(role)) {
+            if (receivedMasterKey == null || !receivedMasterKey.equals(masterKey)) {
+                throw new RuntimeException("Unauthorized: Valid Master Key required to create ADMIN role!");
+            }
+        } else if (!role.equals("USER")) {
+            role = "USER";  // Default role if invalid or empty
+        }
+
+        newUser.setRole(role);
         authUserRepository.save(newUser);
 
         if (emailService != null) {
-            emailService.sendEmail(authUserDTO.getEmail(), "Welcome to Greeting App!", "Thank you for registering!");
+            emailService.sendEmail(authUserDTO.getEmail(), "Welcome to Greeting App!", "Thank you for registering as " + role + "!");
         } else {
             throw new RuntimeException("Email service is not initialized properly.");
         }
 
-        return "User registered successfully!";
+        return "User registered successfully as " + role + "!";
     }
 
-    public Map<String, String> loginUser(LoginDTO loginDTO) {
-        Optional<AuthUser> user = authUserRepository.findByEmail(loginDTO.getEmail());
+    @Override
+    public ResponseEntity<Map<String, String>> loginUser(LoginDTO loginDTO) {
+        Optional<AuthUser> userOptional = authUserRepository.findByEmail(loginDTO.getEmail());
 
-        if (user.isPresent() && passwordEncoder.matches(loginDTO.getPassword(), user.get().getPassword())) {
-            String token = jwtUtil.generateToken(loginDTO.getEmail());
+        if (userOptional.isPresent() && passwordEncoder.matches(loginDTO.getPassword(), userOptional.get().getPassword())) {
+            UserDetails userDetails = userDetailsService.loadUserByUsername(loginDTO.getEmail());  // 🔹 Load UserDetails
+            String token = jwtUtility.generateToken(userDetails);  // 🔹 Generate JWT with UserDetails
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "Login successful!");
             response.put("token", token);
-            return response;
+
+            return ResponseEntity.ok(response);
         }
 
-        throw new RuntimeException("Invalid credentials");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", "Invalid email or password"));
     }
 
-    // 🔹 Forgot Password Implementation
+    @Override
     public String forgotPassword(String email, String newPassword) {
         Optional<AuthUser> userOptional = authUserRepository.findByEmail(email);
 
@@ -86,6 +109,7 @@ public class AuthenticationService implements AuthenticationServiceInterface {
         return "Password has been changed successfully!";
     }
 
+    @Override
     public String resetPassword(String email, String currentPassword, String newPassword) {
         Optional<AuthUser> userOptional = authUserRepository.findByEmail(email);
 
@@ -106,5 +130,4 @@ public class AuthenticationService implements AuthenticationServiceInterface {
 
         return "Password reset successfully!";
     }
-
 }
