@@ -9,6 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "users_info")
 @Getter
@@ -37,4 +39,8 @@ public class AuthUser {
 
     @Column(nullable = false)
     private String role;
+
+    private String resetToken;
+
+    private LocalDateTime tokenExpiry;
 }

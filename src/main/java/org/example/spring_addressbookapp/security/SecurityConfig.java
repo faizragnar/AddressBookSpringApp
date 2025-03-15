@@ -40,12 +40,14 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/api/auth/login", "/api/auth/register", "/swagger-ui/**").permitAll()
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")  // 🔹 Admin-only endpoints
+                        .requestMatchers("/api/auth/login", "/api/auth/register", "/swagger-ui/**",
+                                "/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")  // Admin-only
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))

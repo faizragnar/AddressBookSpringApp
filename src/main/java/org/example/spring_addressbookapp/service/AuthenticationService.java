@@ -14,10 +14,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -103,25 +101,7 @@ public class AuthenticationService implements AuthenticationServiceInterface {
                 .body(Map.of("error", "Invalid email or password"));
     }
 
-    @Override
-    public String forgotPassword(String email, String newPassword) {
-        Optional<AuthUser> userOptional = authUserRepository.findByEmail(email);
-
-        if (userOptional.isEmpty()) {
-            throw new RuntimeException("Sorry! We cannot find the user email: " + email);
-        }
-
-        AuthUser user = userOptional.get();
-        user.setPassword(passwordEncoder.encode(newPassword));
-        authUserRepository.save(user);
-
-        emailService.sendEmail(email, "Password Changed", "Your password has been updated successfully.");
-
-        return "Password has been changed successfully!";
-    }
-
-    @Override
-    public String resetPassword(String email, String currentPassword, String newPassword) {
+    public String generateResetToken(String email) {
         Optional<AuthUser> userOptional = authUserRepository.findByEmail(email);
 
         if (userOptional.isEmpty()) {
@@ -129,15 +109,38 @@ public class AuthenticationService implements AuthenticationServiceInterface {
         }
 
         AuthUser user = userOptional.get();
-
-        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
-            throw new RuntimeException("Current password is incorrect!");
-        }
-
-        user.setPassword(passwordEncoder.encode(newPassword));
+        String resetToken = UUID.randomUUID().toString();
+        user.setResetToken(resetToken);
+        user.setTokenExpiry(LocalDateTime.now().plusMinutes(15)); // Token expires in 15 minutes
         authUserRepository.save(user);
 
-        emailService.sendEmail(email, "Password Reset", "Your password has been updated successfully.");
+        // Send email with reset token link
+        String resetLink = "http://localhost:8080/api/auth/reset-password?token=" + resetToken;
+        emailService.sendEmail(email, "Password Reset Request",
+                "Click the following link to reset your password: " + resetLink);
+
+        return "Password reset email sent successfully!";
+    }
+
+    public String resetPassword(String token, String newPassword) {
+        Optional<AuthUser> userOptional = authUserRepository.findByResetToken(token);
+
+        if (userOptional.isEmpty()) {
+            throw new RuntimeException("Invalid or expired reset token.");
+        }
+
+        AuthUser user = userOptional.get();
+
+        if (user.getTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Token has expired. Please request a new reset link.");
+        }
+
+        // 🔒 Encrypting the New Password Before Saving
+        user.setPassword(passwordEncoder.encode(newPassword));
+
+        user.setResetToken(null);
+        user.setTokenExpiry(null);
+        authUserRepository.save(user);
 
         return "Password reset successfully!";
     }
