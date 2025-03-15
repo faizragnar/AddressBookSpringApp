@@ -18,7 +18,7 @@ public class ContactController {
         this.contactService = contactService;
     }
 
-    @GetMapping("/admin/all")
+    @GetMapping("/all")
     public List<ContactDTO> getAllContacts() {
         return contactService.getAllContacts();
     }

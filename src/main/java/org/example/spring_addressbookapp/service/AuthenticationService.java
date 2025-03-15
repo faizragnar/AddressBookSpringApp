@@ -1,6 +1,7 @@
 package org.example.spring_addressbookapp.service;
 
 import org.example.spring_addressbookapp.dto.AuthUserDTO;
+import org.example.spring_addressbookapp.dto.ContactDTO;
 import org.example.spring_addressbookapp.dto.LoginDTO;
 import org.example.spring_addressbookapp.model.AuthUser;
 import org.example.spring_addressbookapp.repository.AuthUserRepository;
@@ -14,8 +15,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class AuthenticationService implements AuthenticationServiceInterface {
@@ -71,6 +74,14 @@ public class AuthenticationService implements AuthenticationServiceInterface {
         }
 
         return "User registered successfully as " + role + "!";
+    }
+    @Override
+    public List<AuthUserDTO> getAllUsers() {
+        try {
+            return authUserRepository.findAll().stream().map(this::convertToDTO).collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to retrieve user info.");
+        }
     }
 
     @Override
@@ -130,4 +141,14 @@ public class AuthenticationService implements AuthenticationServiceInterface {
 
         return "Password reset successfully!";
     }
+    private AuthUserDTO convertToDTO(AuthUser authUser) {
+        return new AuthUserDTO(
+                authUser.getFirstName(),
+                authUser.getLastName(),
+                authUser.getEmail(),
+                authUser.getPassword(),
+                authUser.getRole()
+        );
+    }
+
 }

@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.example.spring_addressbookapp.dto.AuthUserDTO;
+import org.example.spring_addressbookapp.dto.ContactDTO;
 import org.example.spring_addressbookapp.dto.LoginDTO;
 import org.example.spring_addressbookapp.service.JwtUserDetailsService;
 import org.example.spring_addressbookapp.utility.JwtUtility;
@@ -17,6 +18,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.web.bind.annotation.*;
 
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -24,21 +26,17 @@ import java.util.Map;
 @Tag(name = "Authentication API", description = "Endpoints for user authentication")
 public class AuthController {
 
-    @Autowired
-    private JwtUtility jwtUtility;
 
     @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private JwtUserDetailsService userDetailsService;
-
-    @Autowired
-    private AuthenticationServiceInterface authenticationServiceInterface;
+    AuthenticationServiceInterface authenticationServiceInterface;
 
     @Value("${app.master.key}")
-    private String masterKey;
+    String masterKey;
 
+    @GetMapping("/admin/all")
+    public List<AuthUserDTO> getAllUsers() {
+        return authenticationServiceInterface.getAllUsers();
+    }
     // 🔹 Register a New User
     @PostMapping("/register")
     public ResponseEntity<String> registerUser(
