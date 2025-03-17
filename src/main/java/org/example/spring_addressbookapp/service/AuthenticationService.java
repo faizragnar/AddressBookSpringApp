@@ -87,8 +87,21 @@ public class AuthenticationService implements AuthenticationServiceInterface {
         Optional<AuthUser> userOptional = authUserRepository.findByEmail(loginDTO.getEmail());
 
         if (userOptional.isPresent() && passwordEncoder.matches(loginDTO.getPassword(), userOptional.get().getPassword())) {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(loginDTO.getEmail());  // 🔹 Load UserDetails
-            String token = jwtUtility.generateToken(userDetails);  // 🔹 Generate JWT with UserDetails
+            AuthUser user = userOptional.get();  // 🔹 Fetch role from database
+
+            // 🔹 Load correct UserDetails from database
+            UserDetails userDetails = userDetailsService.loadUserByUsername(loginDTO.getEmail());
+
+            // 🔹 Check role logic
+            String dbRole = user.getRole();  // Role fetched from database
+            String requestRole = loginDTO.getRole(); // Role provided during login
+
+            if ("ADMIN".equalsIgnoreCase(requestRole) && !"ADMIN".equalsIgnoreCase(dbRole)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "Access denied: Only admins can log in as ADMIN"));
+            }
+
+            String token = jwtUtility.generateToken(userDetails);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "Login successful!");
@@ -100,6 +113,8 @@ public class AuthenticationService implements AuthenticationServiceInterface {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("error", "Invalid email or password"));
     }
+
+
 
     public String generateResetToken(String email) {
         Optional<AuthUser> userOptional = authUserRepository.findByEmail(email);
